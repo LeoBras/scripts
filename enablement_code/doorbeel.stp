@@ -1,0 +1,65 @@
+#global msgsndp = 0, kick = 0;
+global a=0, b = 0, c = 0, p1=0;
+global hist, histc;
+global vcpu_dbcount;
+global esmt;
+global both0 = 0;
+
+probe timer.s(1) {
+	printf("event a = %lu, event b = %lu, event c= %lu\n", a, b, c);
+#	printf("dbcounter vcpu1=%lu, vcpu2=%lu, vcpu3=%lu, vcpu4=%lu both0=%lu\n",vcpu_dbcount[0],vcpu_dbcount[1],vcpu_dbcount[2],vcpu_dbcount[3], both0);
+	if (p1 > 0)
+		print(@hist_linear(hist, -1, 100, 0x1));
+#	if (b > 0)
+#		print(@hist_linear(histc, -1, 100, 0x1));
+#		print(@hist_linear(hist, 0x28000000, 0x2800007D, 0x1));
+	
+}
+
+
+#probe kernel.statement("kvmppc_read_dpdes@arch/powerpc/kvm/book3s_hv.c:1205"){
+#probe kernel.statement("kvmppc_emulate_doorbell_instr@arch/powerpc/kvm/book3s_hv.c:1243"){
+probe kernel.function("kvmppc_doorbell_pending"){
+	if (pid() == $1){
+		a++		
+	}
+}
+
+#probe kernel.statement("kvmppc_read_dpdes@arch/powerpc/kvm/book3s_hv.c:1215"){
+#probe kernel.statement("kvmppc_emulate_doorbell_instr@arch/powerpc/kvm/book3s_hv.c:1258"){
+probe kernel.function("kvmppc_doorbell_pending").return{
+	if (pid() == $1 && $return != 0){
+		b++
+	}
+}
+
+probe kernel.statement("kvmppc_emulate_doorbell_instr@arch/powerpc/kvm/book3s_hv.c:1265"){
+	if (pid() == $1){
+		c++
+	}
+}
+
+#probe kernel.statement("kvmppc_emulate_doorbell_instr@arch/powerpc/kvm/book3s_hv.c:1254"){
+#probe kernel.statement("kvmppc_fast_vcpu_kick_hv@arch/powerpc/kvm/book3s_hv.c:241") {
+#probe kernel.statement("kvmppc_doorbell_pending@arch/powerpc/kvm/book3s_hv.c:745"){ 
+#probe kernel.statement("kvmhv_load_hv_regs_and_go@arch/powerpc/kvm/book3s_hv.c:3431") {
+probe kernel.function("kvmppc_run_core"){
+	if (pid() == $1){
+		p1++
+		hist <<< $vc->num_threads;
+	}
+}
+
+/*probe kernel.statement("kvmppc_fast_vcpu_kick_hv@arch/powerpc/kvm/book3s_hv.c:241") {
+	if (pid() == $1){
+		hist <<< $vcpu->arch->thread_cpu
+	}
+}
+
+probe kernel.statement("kvmppc_fast_vcpu_kick_hv@arch/powerpc/kvm/book3s_hv.c:246") {
+	if (pid() == $1){
+		histc <<< $cpu
+	}
+}
+
+*/

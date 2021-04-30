@@ -1,0 +1,18 @@
+/usr/bin/virt-install \
+--hvm \
+--accelerate \
+--name bz188680-leo \
+--machine pseries \
+--memory=4096 \
+--vcpu=8,maxvcpus=16,sockets=1,cores=2,threads=8 \
+--import \
+--nographics \
+--serial pty \
+--memballoon model=virtio \
+--controller type=scsi,model=virtio-scsi \
+--disk path=/dev/shm/rhel-guest-image-8.3-400.ppc64le.qcow2,bus=scsi,size=10,format=qcow2 \
+--network=bridge=virbr0,model=virtio,mac="52:54:00:77:74:c4" \
+--mac="52:54:00:77:74:c4" \
+--boot emulator="/home/sath/qemu/build/qemu-system-ppc64",kernel="/home/leonardo/linux/vmlinux",kernel_args="root=/dev/sda2 rw console=hvc0 console=ttyS0,115200 init=/sbin/init initcall_debug selinux=0 disable_radix" \
+--noautoconsole \
+--qemu-commandline="-M pseries,vsmt=8,ic-mode=xics,cap-cfpc=broken,cap-sbbc=broken,cap-ibs=broken,cap-ccf-assist=off -s"

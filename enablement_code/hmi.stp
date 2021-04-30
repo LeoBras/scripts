@@ -1,0 +1,5 @@
+#probe kernel.function("opal_handle_hmi_event"){
+probe kernel.function("opal_interrupt"){
+	print("\n\n\nSTARTING BACKTRACE\n");
+	print_backtrace()
+}

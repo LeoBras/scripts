@@ -1,0 +1,41 @@
+global t = 0;
+global f = 0, f_last = 0;
+global ext = 0, door=0, hmi=0, others=0;
+global trap;
+
+probe timer.s(1){
+	printf("%5.lu: function: %lu (last: %lu) : ext:%lu door:%lu hmi:%lu others:%lu\n", t, f, f_last, ext, door, hmi, others);
+	t++;
+	f_last = 0
+	if (f > 0)
+		print(@hist_linear(trap, 0, 16, 0x1));
+}
+
+#probe module("kvm_hv").function("xive_interrupt_pending"){
+#probe module("kvm_hv").statement("kvmppc_run_core@arch/powerpc/kvm/book3s_hv.c:3319"){
+#	if (pid() == $1){
+#		trap <<< $trap;
+#	}
+#}
+/*
+probe module("kvm_hv").function("kvmppc_handle_exit_hv"){
+	if (pid() == $1){
+		f++;
+		f_last++;
+		if ($vcpu->arch->trap == 0xF80)
+			ext++
+	}
+}
+*/
+#probe module("kvm_hv").function("kvmppc_emulate_doorbell_instr"){
+probe kernel.statement("kvmppc_emulate_doorbell_instr@*:1248"){
+	if (pid() == $1){
+		f++
+		inst = $vcpu->arch->last_inst
+		rb = (inst >> 11) & 0x1f;
+		arg = $vcpu->arch->regs->gpr[rb] & 0x3f;
+		trap <<< ( $vcpu->vcpu_id - $thr + arg)
+	}
+}
+
+

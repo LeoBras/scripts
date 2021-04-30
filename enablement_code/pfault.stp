@@ -1,0 +1,26 @@
+global t1, t8;
+global f_in = 0, f_out = 0;
+global T = 0;
+
+probe begin {
+	t1 = $1;
+	t8 = t1 + 7;
+}
+
+probe timer.s(1){
+	t++;
+	printf("%lu: pagefaults: in = %lu, out = %lu, diff = %lu\n", T, f_in, f_out, f_in - f_out);
+}
+
+#probe kernel.function("sanity_check_fault") {
+probe kernel.statement("*@arch/powerpc/mm/fault.c:486") {
+	lt = tid();
+	if (lt >= t1 && lt <= t8)
+		f_in++;
+}
+/*probe kernel.function("__do_page_fault").return {
+	lt = tid();
+	if (lt >= t1 && lt <= t8)
+		f_out++;
+}
+*/
